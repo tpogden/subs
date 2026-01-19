@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Fair Subs - Football Rotation Solver</title>
+
+    <!-- Material Design -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+    <!-- KaTeX for fast LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters: [{left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}]});"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 24px 16px 60px 16px;
+            background: #f5f5f5;
+            color: #212121;
+        }
+
+        .grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: 1fr;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-weight: 500;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #1976d2;
+        }
+
+        h3 {
+            font-size: 18px;
+            color: #424242;
+        }
+
+        h4 {
+            font-size: 16px;
+            font-weight: 500;
+            color: #424242;
+        }
+
+        label {
+            font-weight: 500;
+            font-size: 14px;
+            color: #424242;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        textarea,
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-family: 'Roboto', sans-serif;
+            border: 1px solid #bdbdbd;
+            border-radius: 4px;
+            min-height: 44px;
+            background: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        textarea:focus,
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .row {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .row3 {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        /* Mobile: stack columns */
+        @media (max-width: 600px) {
+
+            .row,
+            .row3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'Roboto', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-height: 44px;
+            border: none;
+            border-radius: 4px;
+            background: #1976d2;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        button:hover {
+            background: #1565c0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            background: #0d47a1;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        button.secondary {
+            background: transparent;
+            color: #1976d2;
+            box-shadow: none;
+            border: 1px solid #e0e0e0;
+            text-transform: none;
+            font-weight: 400;
+        }
+
+        button.secondary:hover {
+            background: #f5f5f5;
+            border-color: #bdbdbd;
+            box-shadow: none;
+        }
+
+        button.secondary:active {
+            background: #eeeeee;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .small {
+            font-size: 13px;
+            color: #757575;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: 13px;
+        }
+
+        /* Table improvements */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 500px;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            background: #fafafa;
+            font-weight: 500;
+            color: #616161;
+            z-index: 10;
+            border-bottom: 2px solid #bdbdbd;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        tr.period-played {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+
+        tr.period-played:hover {
+            opacity: 0.5;
+        }
+
+        .period-checkbox {
+            cursor: pointer;
+        }
+
+        table td strong {
+            color: #1976d2;
+            font-weight: 600;
+        }
+
+        /* Error/Success messages */
+        .alert {
+            padding: 14px 16px;
+            border-radius: 4px;
+            margin-top: 12px;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert-error {
+            background: #ffebee;
+            border-left: 4px solid #d32f2f;
+            color: #c62828;
+        }
+
+        .alert-success {
+            background: #e8f5e9;
+            border-left: 4px solid #388e3c;
+            color: #2e7d32;
+        }
+
+        /* Help section */
+        .help-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .help-toggle {
+            font-size: 20px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .help-content {
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+
+        .help-content .table-wrapper {
+            margin-top: 12px;
+        }
+
+        .help-content pre {
+            margin-top: 12px;
+        }
+
+        .help-content h4 {
+            margin-top: 16px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .help-content ul {
+            margin: 8px 0;
+            padding-left: 24px;
+        }
+
+        .help-content li {
+            margin: 4px 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid #e3f2fd;
+            border-top: 3px solid #1976d2;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .progress-text {
+            font-weight: 500;
+            color: #1976d2;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="margin: 0 0 20px 0;">
+        <h1 style="margin-bottom: 8px;">Fair Subs!</h1>
+        <p style="margin-top: 0; color: #757575; font-size: 16px; font-weight: 400;">Automatically create fair football
+            rotation schedules for youth teams</p>
+    </div>
+    <div class="grid">
+
+        <div class="card">
+            <div class="help-header" id="namesHeader">
+                <h3 style="margin: 0;">
+                    <span class="material-icons"
+                        style="font-size: 20px; vertical-align: middle; margin-right: 6px; color: #1976d2;">group</span>
+                    Player names (one per line)
+                </h3>
+                <span class="help-toggle" id="namesToggle">−</span>
+            </div>
+            <div class="help-content" id="namesContent">
+                <textarea id="names">Aisha
+Ben
+Chloe
+Dev
+Ella
+Finn
+Grace</textarea>
+                <div class="small">Squad Size: <strong id="squadSize">7</strong> (= number of lines above). Can be equal
+                    to
+                    or greater than positions on pitch.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="help-header" id="matchesHeader">
+                <h3 style="margin: 0;">
+                    <span class="material-icons"
+                        style="font-size: 20px; vertical-align: middle; margin-right: 6px; color: #1976d2;">sports</span>
+                    Matches
+                </h3>
+                <span class="help-toggle" id="matchesToggle">−</span>
+            </div>
+            <div class="help-content row" id="matchesContent">
+                <div>
+                    <label for="matches"><span class="material-icons"
+                            style="font-size: 18px; vertical-align: middle; margin-right: 4px; color: #1976d2;">sports</span>Matches</label>
+                    <input id="matches" type="number" min="1" value="4" />
+                </div>
+                <div>
+                    <label for="periodsPerMatch"><span class="material-icons"
+                            style="font-size: 18px; vertical-align: middle; margin-right: 4px; color: #1976d2;">timer</span>Periods
+                        per match</label>
+                    <input id="periodsPerMatch" type="number" min="2" max="2" value="2" />
+                </div>
+                <div>
+                    <label for="seed"><span class="material-icons"
+                            style="font-size: 18px; vertical-align: middle; margin-right: 4px; color: #1976d2;">tag</span>Week
+                        (seed)</label>
+                    <input id="seed" type="text" placeholder="2026-03" style="width: 100px;" />
+                </div>
+                <div class="small" style="grid-column: 1 / -1;">
+                    Each match has <b>2 periods</b> to model halftime rotations (players swap positions or subs replace
+                    outfielders).
+                    The fairness constraint ensures balanced time across all positions.
+                    The <b>week seed</b> ensures the same schedule is always generated for the same players and settings
+                    - use format YYYY-WW (e.g., 2026-03
+                    for week 3 of 2026).
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="help-header" id="positionsHeader">
+                <h3 style="margin: 0;">
+                    <span class="material-icons"
+                        style="font-size: 20px; vertical-align: middle; margin-right: 6px; color: #1976d2;">sports_soccer</span>
+                    Outfield positions (1 of each on pitch)
+                </h3>
+                <span class="help-toggle" id="positionsToggle">−</span>
+            </div>
+            <div class="help-content" id="positionsContent">
+                <div class="small">Goalie is always included. Total positions = 1 goalie + outfield roles. Any extra
+                    players
+                    become subs.</div>
+                <div id="positions"></div>
+                <button id="addRole" type="button" class="secondary">
+                    <span class="material-icons"
+                        style="font-size: 18px; vertical-align: middle; margin-right: 4px;">add</span>
+                    Add position
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <label><span class="material-icons"
+                    style="font-size: 18px; vertical-align: middle; margin-right: 4px; color: #1976d2;">rule</span>Rules</label>
+            <div>
+                <label style="font-weight: 400; display: flex; align-items: center; margin-bottom: 8px;">
+                    <input type="checkbox" id="goalieStays" checked style="margin-right: 8px;" />
+                    <span class="material-icons"
+                        style="font-size: 18px; margin-right: 6px; color: #757575;">sports_handball</span>
+                    Goalie stays for whole match (no halftime goalie change)
+                </label>
+                <label style="font-weight: 400; display: flex; align-items: center; margin-bottom: 8px;">
+                    <input type="checkbox" id="noConsecSubs" checked style="margin-right: 8px;" />
+                    <span class="material-icons"
+                        style="font-size: 18px; margin-right: 6px; color: #757575;">swap_horiz</span>
+                    No consecutive subs (no one sub twice in a row)
+                </label>
+                <label style="font-weight: 400; display: flex; align-items: center;">
+                    <input type="checkbox" id="keepPositions" checked style="margin-right: 8px;" />
+                    <span class="material-icons" style="font-size: 18px; margin-right: 6px; color: #757575;">lock</span>
+                    Players keep positions within match (only subs change positions)
+                </label>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 16px;">
+                <span class="material-icons"
+                    style="font-size: 20px; vertical-align: middle; margin-right: 6px; color: #1976d2;">event</span>
+                Schedule
+            </h3>
+            <button id="solveBtn" type="button" style="width: 100%; margin-bottom: 16px;">
+                <span class="material-icons"
+                    style="font-size: 20px; vertical-align: middle; margin-right: 8px;">calculate</span>
+                Solve Schedule
+            </button>
+            <div id="status" class="small" style="margin-bottom: 12px;"></div>
+            <div id="errorMsg"></div>
+            <div class="table-wrapper" id="schedule"></div>
+            <div class="small" id="scheduleNote" style="display: none; margin-top: 12px; color: #1976d2;">
+                <span class="material-icons"
+                    style="font-size: 14px; vertical-align: middle; margin-right: 4px;">info</span>
+                <strong>Bold names</strong> indicate players just subbed in (were sub in previous period)
+            </div>
+        </div>
+
+        <div class="card" id="timerBlock" style="display: none;">
+            <h3 style="margin: 0 0 16px 0;">
+                <span class="material-icons"
+                    style="font-size: 20px; vertical-align: middle; margin-right: 6px; color: #1976d2;">timer</span>
+                Period Timer
+            </h3>
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <div>
+                    <label for="timerDuration" style="font-size: 14px; margin-right: 8px;">Duration (mins):</label>
+                    <input type="number" id="timerDuration" min="1" max="60" step="1" value="5"
+                        style="width: 70px; padding: 6px 8px; border: 1px solid #bdbdbd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <button id="timerBtn" class="primary" style="padding: 8px 16px;">
+                    <span class="material-icons"
+                        style="font-size: 18px; vertical-align: middle; margin-right: 4px;">play_arrow</span>
+                    Start Timer
+                </button>
+                <div id="timerDisplay" style="font-size: 24px; font-weight: 500; color: #1976d2; min-width: 80px;">5:00
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="help-header" id="totalsHeader">
+                <h3 style="margin: 0;">
+                    <span class="material-icons"
+                        style="font-size: 20px; vertical-align: middle; margin-right: 6px; color: #1976d2;">analytics</span>
+                    Totals (per period)
+                </h3>
+                <span class="help-toggle" id="totalsToggle">+</span>
+            </div>
+            <div class="help-content hidden" id="totalsContent">
+                <div class="table-wrapper" id="totals"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="help-header" id="helpHeader">
+                <h3 style="margin: 0;">
+                    <span class="material-icons"
+                        style="font-size: 20px; vertical-align: middle; margin-right: 6px; color: #1976d2;">help_outline</span>
+                    How it Works
+                </h3>
+                <span class="help-toggle" id="helpToggle">+</span>
+            </div>
+            <div class="help-content hidden" id="helpContent">
+                <p><strong>This tool creates fair player rotations for youth football matches.</strong></p>
+
+                <h4>How to Use:</h4>
+                <ol>
+                    <li>Enter your player names (one per line)</li>
+                    <li>Set the number of matches</li>
+                    <li>Configure outfield positions (each position has 1 player on the pitch)</li>
+                    <li>Choose rules:
+                        <ul>
+                            <li>Goalie stays for whole match?</li>
+                            <li>Prevent consecutive subs? (ensures no one sits out twice in a row)</li>
+                            <li>Keep positions within match? (players stay in same position unless being subbed - more
+                                realistic for organized play)</li>
+                        </ul>
+                    </li>
+                    <li>Click "Solve Schedule" and wait 5-30 seconds</li>
+                    <li>Not happy with the result? Change the week seed to get a different fair solution!</li>
+                    <li>In the schedule, <strong style="color: #1976d2;">bold blue names</strong> indicate players who
+                        just came on (were subs in the previous period) - these show you which players above need to
+                        come off</li>
+                </ol>
+
+                <h4>The Rules:</h4>
+                <ul>
+                    <li><strong>Squad:</strong> You can have equal or more players than positions (e.g., 5 players for 5
+                        spots = no subs, just position rotation; 7 players for 5 spots = 2 subs)</li>
+                    <li><strong>Matches:</strong> Each match has 2 periods to model halftime rotations</li>
+                    <li><strong>Goalie:</strong> Can stay for whole match or rotate at halftime (configurable)</li>
+                    <li><strong>Position changes:</strong> Can allow flexible position changes at halftime, or lock
+                        players to keep their position unless being substituted (configurable)</li>
+                    <li><strong>Substitutions:</strong> If you have subs, they swap with outfield players at halftime
+                    </li>
+                    <li><strong>Fairness:</strong> Each player gets approximately equal time in each role (within ±1
+                        assignment)</li>
+                </ul>
+
+                <h4>Technical Details:</h4>
+                <p>This is a <strong>client-side MILP solver</strong> (Mixed Integer Linear Programming). All
+                    computation happens in your browser - no data is sent to any server.</p>
+                <ul>
+                    <li><strong>MILP:</strong> A mathematical optimization technique that finds schedules satisfying
+                        hard constraints (each player has exactly one role per period, correct number of players per
+                        position, etc.)</li>
+                    <li><strong>Fairness constraints:</strong> The solver ensures no player gets too many or too few
+                        assignments in any role by enforcing min/max bounds</li>
+                    <li><strong>Seeded randomization:</strong> Uses the week seed for reproducible tie-breaking; the
+                        same seed always produces the same solution</li>
+                    <li><strong>Library:</strong> Uses GLPK.js (GNU Linear Programming Kit compiled to JavaScript via
+                        WebAssembly)</li>
+                </ul>
+
+                <h4>Troubleshooting:</h4>
+                <ul>
+                    <li>If you get "No feasible schedule", try: adding more matches, disabling "no consecutive subs", or
+                        adjusting players/positions</li>
+                    <li>Make sure you have at least as many players as on-pitch positions</li>
+                    <li>Works best with 5-8 players for a 5-player team</li>
+                    <li><strong>Performance:</strong> 2-4 matches typically solve in 5-30 seconds. More matches may take
+                        longer</li>
+                </ul>
+
+                <h4>Mathematical Model:</h4>
+                <p>The schedule is found by solving a Mixed Integer Linear Program (MILP) with the following
+                    formulation:</p>
+
+                <p><strong>Decision Variables:</strong></p>
+                <ul>
+                    <li>\(x_{i,m,p,r} \in \{0,1\}\): Binary variable = 1 if player \(i\) has role \(r\) in match \(m\),
+                        period \(p\)</li>
+                    <li>\(o_{i,m,p} \in \{0,1\}\): Binary variable = 1 if player \(i\) is on pitch in match \(m\),
+                        period \(p\)</li>
+                    <li>\(y_{i,m} \in \{0,1\}\): Binary variable = 1 if player \(i\) stays on pitch for entire match
+                        \(m\)</li>
+                </ul>
+
+                <p><strong>Hard Constraints:</strong></p>
+                <ol>
+                    <li><strong>One role per period:</strong>
+                        \[\sum_{r \in R} x_{i,m,p,r} = 1 \quad \forall i,m,p\]
+                    </li>
+                    <li><strong>Role counts:</strong>
+                        \[\sum_{i=1}^{N} x_{i,m,p,r} = c_r \quad \forall r,m,p\]
+                        where \(c_r\) is the count for role \(r\) (e.g., 1 goalie, 1 per outfield position, \(s\) subs)
+                    </li>
+                    <li><strong>Goalie stays (optional):</strong>
+                        \[x_{i,m,0,G} = x_{i,m,1,G} \quad \forall i,m\]
+                    </li>
+                    <li><strong>No consecutive subs (optional):</strong>
+                        \[x_{i,m,p,\text{Sub}} + x_{i,m',p',\text{Sub}} \leq 1\]
+                        for consecutive periods \((m,p)\) and \((m',p')\)
+                    </li>
+                    <li><strong>Halftime substitutions:</strong>
+                        \[\sum_{i=1}^{N} y_{i,m} = k \quad \forall m\]
+                        where \(k = \text{team size} - \text{subs}\), and \(y_{i,m}\) is constrained by:
+                        \[o_{i,m,p} + x_{i,m,p,\text{Sub}} = 1 \quad \forall i,m,p\]
+                        \[y_{i,m} \leq o_{i,m,0}, \quad y_{i,m} \leq o_{i,m,1}, \quad y_{i,m} \geq o_{i,m,0} + o_{i,m,1}
+                        - 1\]
+                    </li>
+                    <li><strong>Keep positions (optional):</strong>
+                        \[x_{i,m,0,r} = x_{i,m,1,r} \quad \forall i,m,r \text{ when player } i \text{ stays on pitch}\]
+                    </li>
+                </ol>
+
+                <p><strong>Fairness Constraints:</strong></p>
+                <p>For each role \(r\) and player \(i\):</p>
+                \[\min_r \leq \sum_{m,p} x_{i,m,p,r} \leq \max_r\]
+                <p>where:</p>
+                <ul>
+                    <li>\(\min_r = \left\lfloor \frac{T_r}{N} - 0.5 \right\rfloor\), with \(T_r\) = total slots for role
+                        \(r\), \(N\) = number of players</li>
+                    <li>\(\max_r = \left\lceil \frac{T_r}{N} + 0.5 \right\rceil\)</li>
+                    <li>This ensures no player gets more than 1 extra assignment in any role compared to others</li>
+                </ul>
+
+                <p><strong>Objective:</strong></p>
+                \[\min \sum_{i,m,p,r} \alpha_{i,m,p,r} \cdot x_{i,m,p,r}\]
+                <p>where \(\alpha_{i,m,p,r}\) are seeded random coefficients (for reproducibility). All feasible
+                    solutions are equally fair due to
+                    the fairness constraints.</p>
+
+                <p style="margin-top: 12px; font-size: 13px; color: #757575;">
+                    <em>Note: The model uses auxiliary variables and constraints to implement logical AND operations for
+                        the stayer variables and position-keeping logic.</em>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./subs.js"></script>
+</body>
+
+</html>
